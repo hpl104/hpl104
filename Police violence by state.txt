@@ -1,0 +1,164 @@
+# 1. Read the original data
+
+library(foreign)
+pv <- read.spss("C:/Users/hpl104/Documents/UNK/Demography/DATA/PoliceViolenceStateYear.sav", to.data.frame=TRUE)
+head(pv)
+# Keep only needed columns
+pv <- pv[c(-3:-10)]
+pv[is.na(pv)] <- 0
+
+# 2. Convert the file to long format
+
+library(reshape)
+pv2 <- cast(pv, State ~ Year)
+# omit missing cases (doesn't have to be the whole state)
+pv2[is.na(pv2)] <- 0
+head(pv2)
+
+# 3. Convert data to matrix form
+
+# omit the first column of the matrix
+
+pv2.matrix <- as.matrix(pv2[ ,-1])
+head(pv2.matrix)
+
+# 4. Calculating dissimilarity matrix
+
+library(TSclust)
+library(dtwclust)
+pv2_dist <- diss(SERIES=pv2.matrix, METHOD="DTW") 
+
+# put the names of the states back in
+names(pv2_dist) <- pv2$State
+
+# 5. Use the Elbow method to determine the optimal number of clusters
+
+set.seed(1234)
+k.max <- 20
+data <- pv2_dist
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data, k, nstart=50,iter.max = 20 )$tot.withinss})
+wss
+
+# Compute and plot wss for k = 2 to k = 20.
+
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+     
+# 6. Use the Silhoutte Analysis to determine the optimal number of clusters
+
+library(fpc)
+set.seed(1234)
+pamk.best <- pamk(pv2_dist)
+cat("number of clusters estimated by optimum average silhouette width:", pamk.best$nc, "\n")
+
+# 7. Use the Calinsky Criterion to determine the optimal number of clusters
+
+library(vegan)
+set.seed(1234)
+cal_fit <- cascadeKM(pv2_dist, 1, 10, iter = 1000)
+plot(cal_fit, sortg = TRUE, grpmts.plot = TRUE)
+
+# 8. Perform hierarchical agglomerative clustering
+
+pv2_hclust <- hclust(pv2_dist)
+plot(pv2_hclust, main="Clustering of the # reported police brutality")
+
+hc.pv2.cut <- cutree(pv2_hclust, 10)
+rect.hclust(pv2_hclust, k = 10)
+
+# 9. Merge the data with the cluster membership back to the original (unscaled) data so to get a more meaningful averages comparisons
+
+pv2clus <- as.data.frame(cbind(pv2, hc.pv2.cut))
+pv2clus <- pv2clus[c(-2:-7)]
+write.csv(pv2clus, “pv_clusters.csv”)
+pv2.clus <- merge(pv,pv2clus,by="State")
+
+# 10. Plot the different clusters
+
+library(ggplot2)
+ggplot(data = pv2.clus, aes(x = Year, y = Cases, group = State)) +
+  geom_line(aes(x = Year, y = Cases, color=factor(hc.pv2.cut))) +
+  xlab("Year") + 
+  ylab("# of reported cases") +
+  facet_wrap(~State) +
+  guides(color="none")
+  
+# Alternatively, we can also plot by clusters
+
+cluster1 <- pv2.clus[which(pv2.clus$hc.pv2.cut==1),]
+ggplot(data = cluster1, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+
+cluster2 <- pv2.clus[which(pv2.clus$hc.pv2.cut==2),]
+ggplot(data = cluster2, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+
+cluster3 <- pv2.clus[which(pv2.clus$hc.pv2.cut==3),]
+ggplot(data = cluster3, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+cluster4 <- pv2.clus[which(pv2.clus$hc.pv2.cut==4),]
+ggplot(data = cluster4, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+
+cluster5 <- pv2.clus[which(pv2.clus$hc.pv2.cut==5),]
+ggplot(data = cluster5, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+cluster6 <- pv2.clus[which(pv2.clus$hc.pv2.cut==6),]
+ggplot(data = cluster6, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+cluster7 <- pv2.clus[which(pv2.clus$hc.pv2.cut==7),]
+ggplot(data = cluster7, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+cluster8 <- pv2.clus[which(pv2.clus$hc.pv2.cut==8),]
+ggplot(data = cluster8, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+cluster9 <- pv2.clus[which(pv2.clus$hc.pv2.cut==9),]
+ggplot(data = cluster9, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+cluster10 <- pv2.clus[which(pv2.clus$hc.pv2.cut==10),]
+ggplot(data = cluster10, aes(x = Year, y = Cases, group = State)) +
+  geom_line(color="black")  +
+  xlab("Year") + 
+  ylab("# of reported cases") +  
+  facet_wrap(~State)
+
+
